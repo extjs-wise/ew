@@ -1,0 +1,21 @@
+{
+	"text": "images",
+	"checked": false,
+	"children": [{
+			"text": "script_code.png",
+			"leaf": "true",
+			"iconCls": "image",
+			"checked": false
+		}, {
+			"text": "html.png",
+			"leaf": "true",
+			"iconCls": "image",
+			"checked": true
+		}, {
+			"text": "js",
+			"laoded":true,
+			"iconCls": "image",
+			"checked": true
+		}
+	]
+}

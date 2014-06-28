@@ -1,0 +1,1049 @@
+/**
+外部命名规则为aaaBbbCcc
+内部命名规则为_aaa_bbb_ccc
+外部命名变量 优先级高于 内部命名变量。
+默认值命名规则为default开头。
+静态值命名规则为static开头。
+默认值变量 会被普通命名变量重写，
+普通命名变量 会被静态值命名变量重写。
+所有存在对应默认值或静态值的变量拥有get方法。
+*/
+Ext.define('Ews.view.grid.Panel', (function() {
+			return {
+				extend: 'Ext.grid.Panel',
+				region: 'north',
+				requires: ['Ext.grid.Panel', 'Ext.grid.View'],
+				alias: ['widget.ews.gridpanel', 'widget.ews.grid'],
+				alternateClassName: ['Ews.list.ListView', 'Ews.ListView', 'Ews.grid.GridPanel', 'Ews.grid.Panel', 'Ews.view.grid.Panel'],
+				viewType: 'gridview',
+				lockable: false,
+				rowLines: true,
+				columnLines: true,
+				minWidth: 700,
+				width: '100%',
+				minHeight: 210,
+				height: '100%',
+				title: 'Grid',
+				border: '0 0 0 0',
+				plugins: [
+					/*{
+					ptype:'gridheaderresizer',
+					dynamic:true,
+					pluginId:'gridheaderresizer'
+					}*/
+				],
+				initComponent: function() {
+					var me = this;
+					me.initEws();
+					//me.createModel();
+					console.log(me.utils('getProperty')('default_columns'));
+					me.store = me.build_store();
+					me.columns = me.build_columns();
+					me.build_default_btns_and_forms();
+					me.dockedItems = me.build_docked_items();
+					switch (me.get_default_form_style()) {
+						case 'dock':
+							break;
+						case 'dialog':
+							break;
+						default:
+							break;
+					}
+					this.callParent(arguments);
+				},
+				initEws: function() {
+					var me = this;
+					me.view_config = {
+						showPreview: true,
+						scrollOffset: 0,
+						forceFit: true,
+						autoFill: true,
+						fitcontainer: true,
+						emptyText: 'There is nothing to show.'
+					};
+					me.initPublicProperty();
+				},
+				initPublicProperty: function() {
+					var me = this;
+					me.static_private_public_name_config = {
+						'default_columns': 'default_columns',
+						'default_btns_description': '',
+						'default_btns_config': 'default_btns_config',
+						'default_forms_style': '',
+						'with_out': 'withNo',
+						'view_config': '',
+						'build_store': '',
+						'build_columns': '',
+						'build_buttons': '',
+						'build_docked_items': '',
+						'build_default_btns_and_forms': '',
+						'build_search_form': '',
+						'build_add_form': '',
+						'build_edit_form': '',
+						'get_default_form_style': ''
+					};
+					me.utils('initPublicProperty')(me.static_private_public_name_config);
+				},
+				default_columns: {
+					items: {
+						rownumberer: {
+							xtype: 'rownumberer'
+						}
+					},
+					defaults: {
+						flext: 1,
+						minWidth: 10,
+						maxWidth: 1024,
+						defaultWidth: 30,
+						editor: {
+							xtype: 'textfield',
+							allowBlank: false
+						}
+					}
+				},
+				default_btns_description: 'CRUD',
+				default_btns_config: {
+					R: {
+						xtype: 'button',
+						iconCls: 'fcat search-icon',
+						text: 'Search',
+						listeners: {
+							click: function(oThis, ev, eOpts) {
+								var me = oThis.ownerCt.ownerCt,
+									search_form = me.search_form;
+								me.utils('toggleDefaultForm')(oThis, ev, eOpts, search_form);
+							}
+						}
+					},
+					C: {
+						xtype: 'button',
+						iconCls: 'fcat add-icon',
+						text: 'Add',
+						listeners: {
+							click: function(oThis, ev, eOpts) {
+								var me = oThis.ownerCt.ownerCt,
+									add_form = me.add_form;
+								me.utils('toggleDefaultForm')(oThis, ev, eOpts, add_form);
+							}
+						}
+					},
+					U: {
+						xtype: 'button',
+						iconCls: 'fcat edit-icon',
+						text: 'Edit',
+						listeners: {
+							click: function(oThis, ev, eOpts) {
+								var me = oThis.ownerCt.ownerCt,
+									edit_form = me.edit_form;
+								me.utils('toggleDefaultForm')(oThis, ev, eOpts, edit_form);
+							}
+						}
+					},
+					D: {
+						xtype: 'button',
+						iconCls: 'fcat delete-icon',
+						text: 'Delete',
+						listeners: {
+							click: function(oThis, ev, eOpts) {
+								var me = oThis.ownerCt.ownerCt;
+								Ext.Msg.alert('clicked', '');
+							}
+						}
+					}
+				},
+				default_forms_style: ('dialog' || 'dock' || 'rowediting'),
+				with_out: [],
+				//createModel: function() {},
+				build_store: function() {
+					return this.store;
+				},
+				build_columns: function() {
+					var me = this,
+						defaultColumnsObj = me.utils('mergeProperty')('defaultColumns'),
+						defaultColumnsItemsObj = defaultColumnsObj.items,
+						prop, defaultColumnsItemsAry = [],
+						me_columns = me.columns,
+						me_columns_items;
+					for (prop in defaultColumnsItemsObj) {
+						if (me.utils('withNo')(prop) === false) {
+							defaultColumnsItemsAry.push(defaultColumnsItemsObj[prop]);
+						}
+					}
+					if (Ext.isObject(me_columns) === true) {
+						me_columns_items = me_columns.items;
+					} else if (Ext.isArray(me_columns) === true) {
+						me_columns_items = me_columns;
+					} else {
+						me_columns_items = [];
+					}
+					defaultColumnsItemsAry = defaultColumnsItemsAry.concat(me_columns_items);
+					/*console.log(Ext.merge({}, defaultColumnsObj, me_columns, {
+								items: defaultColumnsItemsAry
+							}));
+					*/
+					return Ext.merge({}, defaultColumnsObj, me_columns, {
+							items: defaultColumnsItemsAry
+						});
+				},
+				build_buttons: function() {},
+				build_docked_items: function() {
+					var me = this,
+						docked_items = me.dockedItems,
+						default_btns = me.default_btns,
+						form_style = me.get_default_form_style(),
+						default_dock_forms = (form_style === 'dock' ? me.default_forms : []),
+						pagingtoolbar_items = (default_btns.length > 0 ? (['-'].concat(default_btns).concat(['-'])) : []);
+					//Ext.log(this.store);
+					return ([{
+								xtype: 'pagingtoolbar',
+								dock: 'bottom',
+								store: this.store,
+								items: pagingtoolbar_items,
+								displayInfo: true
+							}
+						].concat(default_dock_forms).concat(docked_items) || []);
+				},
+				build_default_btns_and_forms: function() {
+					var me = this,
+						aDefaultBtnsDescription = me.default_btns_description.split('').reverse(),
+						nDefaultBtnsDescriptionLength = aDefaultBtnsDescription.length,
+						sDefaultBtnsDescription, oConfig;
+					me.default_forms = [];
+					me.default_btns = [];
+					var buildDefaultForms = function(sType) {
+						switch (sType) {
+							case 'C':
+								me.add_form = me.build_add_form();
+								me.default_forms.push(me.add_form);
+								break;
+							case 'R':
+								me.search_form = me.build_search_form();
+								me.default_forms.push(me.search_form);
+								break;
+							case 'U':
+								me.edit_form = me.build_edit_form();
+								me.default_forms.push(me.edit_form);
+								break;
+							default:
+								break;
+						}
+					};
+					while (nDefaultBtnsDescriptionLength-- > 0) {
+						sDefaultBtnsDescription = aDefaultBtnsDescription[nDefaultBtnsDescriptionLength];
+						oConfig = me.default_btns_config[sDefaultBtnsDescription];
+						me.default_btns.push(oConfig);
+						buildDefaultForms(sDefaultBtnsDescription);
+					}
+				},
+				build_search_form: function() {
+					var me = this;
+					return this.utils('initDefaultForm')({
+							form_type: 'Search',
+							form_title: me.locale['default'].search_form.title,
+							submit_btn_name: me.locale['default'].search_form.submit_btn.text
+						});
+				},
+				build_add_form: function() {
+					var me = this;
+					return this.utils('initDefaultForm')({
+							form_type: 'Add',
+							form_title: me.locale['default'].add_form.title,
+							submit_btn_name: me.locale['default'].add_form.submit_btn.text
+						});
+				},
+				build_edit_form: function() {
+					var me = this;
+					return this.utils('initDefaultForm')({
+							form_type: 'Edit',
+							form_title: me.locale['default'].edit_form.title,
+							submit_btn_name: me.locale['default'].edit_form.submit_btn.text
+						});
+				},
+				get_default_form_style: function() {
+					var me = this;
+					return Ext.isString(me.default_forms_style) === true ? me.default_forms_style.toLowerCase() : 'dock';
+				},
+				locale: {
+					"default": {
+						form: {
+							title: 'FORM'
+						},
+						search_form: {
+							title: 'SEARCH',
+							submit_btn: {
+								text: 'SEARCH'
+							}
+						},
+						add_form: {
+							title: 'ADD',
+							submit_btn: {
+								text: 'ADD'
+							}
+						},
+						edit_form: {
+							title: 'EDIT',
+							submit_btn: {
+								text: 'SAVE'
+							}
+						},
+						reset_btn: {
+							text: 'RESET'
+						},
+						cancel_btn: {
+							text: 'CANCEL'
+						}
+					}
+				},
+				utils: function(funcNameStr) {
+					var me = this,getConsoleTime = function(nStartTime, nEndTime){
+							var oResult,time = true, str;
+							if(time === true){
+								if (arguments.length === 0) {
+									time = 0;
+									str = "it's ";
+								} else if (arguments.length === 1) {
+									time = nStartTime;
+									str = "it's ";
+								} else if (arguments.length === 2) {
+									time = nEndTime - nStartTime;
+									str = "spend ";
+								} else {
+									/*WARNING OUT OF THE EDGE OF DESIGN.*/
+								}
+								var date = new Date(time);
+								oResult = (str + date.getSeconds() + ':' + date.getMilliseconds());
+							}else{
+								/*DO NOTHING;*/
+								oResult = '';
+							}
+							return oResult;
+						}, consoleTime = function(nStartTime, nEndTime) {
+							var time = true, str;
+							if(time === true){
+								console.log(getConsoleTime(nStartTime, nEndTime));
+							}else{
+								/*DO NOTHING;*/
+							}
+						}, consolelog = function(obj) {
+							var log = true;
+							if (log === true) {
+								console.log(obj);
+							} else {
+								// DO NOTHING;
+							}
+						}, consoledebug = function(obj) {
+							var nS, nE;
+							nS = new Date();
+							var debug = false;
+							if (debug === true) {
+								console.log([getConsoleTime(nS.getTime()) , obj]);
+							} else {
+								// DO NOTHING;
+							}
+						}, fGetPublicName = function(sStr) {
+							/*PublickName:aaaBbbCcc*/
+							consoledebug('BEGIN fGetPublicName');
+							var pattHeadRemove = /^_/,
+								pattHeadRest = /^[_]+/,
+								patt = /_[a-z]/,
+								patt2 = /[a-z]/,
+								headerStr = '',
+								indexUnderline = sStr.search(patt),
+								theUnderlineStr = '',
+								newStr = '';
+							if (pattHeadRemove.test(sStr) === true) {
+								/*remove the first underline char*/
+								sStr = sStr.replace(pattHeadRemove, '');
+								if (pattHeadRest.test(sStr) === true) {
+									/*READY TO RETURN NOW*/
+								} else {
+									/*DO NOTHING.*/
+									while (patt.test(sStr) === true) {
+										theUnderlineStr = patt.exec(sStr);
+										if (Ext.isArray(theUnderlineStr) === true) {
+											theUnderlineStr = theUnderlineStr[0];
+											newStr = patt2.exec(theUnderlineStr);
+											if (Ext.isArray(newStr) === true) {
+												newStr = newStr[0];
+												newStr = (newStr).toUpperCase();
+												sStr = sStr.replace(theUnderlineStr, newStr);
+											} else {
+												/*WARNING the sStr that given is not the format of private.*/
+											}
+										} else {
+											/*WARNING the sStr that given is not the format of private.*/
+										}
+									}
+								}
+								//sStr = headStr + sStr;
+							} else {
+								/*WARNING the sStr that given is not the format of private.*/
+							}
+							consoledebug('END fGetPublicName');
+							return sStr;
+						}, fGetPrivateName = function(sPropertyName) {
+							/*PrivateName:_aaa_bbb_ccc*/
+							consoledebug('BEGIN fGetPrivateName');
+							var patt = /[A-Z]/,
+								//indexUpperCase = sPropertyName.search(patt),
+								theUpperCaseChar = '',
+								newStr = '';
+							consolelog({
+									sPropertyName: sPropertyName
+								});
+							while (patt.test(sPropertyName) === true) {
+								consolelog({
+										sPropertyName: sPropertyName
+									});
+								theUpperCaseChar = patt.exec(sPropertyName)[0];
+								newStr = '_' + theUpperCaseChar.toLowerCase();
+								consolelog({
+										sPropertyName: sPropertyName
+									});
+								sPropertyName = sPropertyName.replace(theUpperCaseChar, newStr);
+								consolelog({
+										sPropertyName: sPropertyName
+									});
+							}
+							if (sPropertyName.indexOf('___') !== 0) {
+								sPropertyName = '_' + sPropertyName;
+							} else {
+								/*already the privatest/deepest level*/
+							}
+							consoledebug('END fGetPrivateName');
+							return sPropertyName;
+						}, fGetDefaultName = function(sStr) {
+							/*DefaultName:default_aaa_bbb_ccc; or defaultAaaBbbCcc;*/
+							consoledebug('BEGIN fGetDefaultName');
+							consolelog({
+									fGetDefaultName: sStr
+								});
+							var sPrivateName = fGetPrivateName(sStr),
+								sHeader = sPrivateName.substring(0, 1),
+								sRest = sPrivateName.substring(1);
+							consoledebug('END fGetDefaultName');
+							return 'default' + sHeader.toUpperCase() + sRest;
+						}, fGetStaticName = function(sStr) {
+							/*StaticName: static_aaa_bbb_ccc; or staticAaaBbbCcc;*/
+							consoledebug('BEGIN fGetStaticName');
+							consolelog({
+									fGetStaticName: sStr
+								});
+							var sPrivateName = fGetPrivateName(sStr),
+								sHeader = sPrivateName.substring(0, 1),
+								sRest = sPrivateName.substring(1);
+							consoledebug('END fGetStaticName');
+							return 'static' + sHeader.toUpperCase() + sRest;
+						};
+					var withNo = function(optionsAry) {
+						/**
+						 *	optionsAry	[string, array]	the options needs to be matched.
+						 *	usage:	if(this.utils.withNo('rownumberer')===true){do something;}
+						 */
+						consoledebug('BEGIN withNo');
+						var withNo = me.withNo || me.with_out || me.with_no || [],
+							resultObj = {}, withNoStr = Ext.isArray(withNo) ? withNo.join() : withNo,
+							oResult;
+						if (Ext.isString(optionsAry) === true) {
+							if ((',' + withNoStr + ',').indexOf(',' + optionsAry + ',') !== -1) {
+								oResult = true;
+							} else {
+								oResult = false;
+							}
+						} else if (Ext.isArray(optionsAry)) {
+							optionsAry = [optionsAry];
+							var optionsAry_length = optionsAry.length,
+								optionsAryItemStr;
+							while (optionsAry_length-- > 0) {
+								optionsAryItemStr = optionsAry[optionsAry_length];
+								if (Ext.isString(optionsAryItemStr) && (',' + withNoStr + ',').indexOf(',' + optionsAryItemStr + ',') !== -1) {
+									resultObj[optionsAryItemStr] = true;
+								} else {
+									resultObj[optionsAryItemStr] = false;
+								}
+							}
+							oResult = resultobj;
+						} else {
+							/*WARNING IT'S UNUSUAL TO SEE THIS MESSAGE.*/
+						}
+						consoledebug('END withNo');
+						return oResult;
+					};
+					var gridColumnsToFormItems = function(aColumns) {
+						consoledebug('BEGIN gridColumnsToFormItems');
+						var oResult;
+						if (Ext.isObject(aColumns) === true) {
+							aColumns = aColumns.items || [];
+							var columnsAry_length = aColumns.reverse().length,
+								grid_columns_item, form_items_ary = [],
+								form_item_obj = {}, converting_property_list = [
+									["fieldLabel", "text"],
+									["name", "dataIndex"],
+									["xtype", {
+											"editor": "xtype"
+										}
+									]
+								] || {
+									fieldLabel: 'text',
+									name: 'dataIndex',
+									xtype: 'editor.xtype'
+								},
+								column_property;
+							while (columnsAry_length-- > 0) {
+								grid_columns_item = aColumns[columnsAry_length];
+								//consolelog(columnsAry_length);
+								if (Ext.isDefined(grid_columns_item["dataIndex"]) === false) {
+									continue;
+								}
+								//consolelog({form_item_obj_prop:form_item_obj[prop], grid_columns_item:grid_columns_item});
+								form_item_obj = {};
+								grid_columns_item = Ext.merge({}, (me.utils('getProperty')('default_columns')).defaults, grid_columns_item);
+								consolelog(me.utils('analysePropertyConfigureObject')(converting_property_list, form_item_obj, grid_columns_item));
+								consolelog({
+										form_item_obj_prop: form_item_obj,
+										grid_columns_item: grid_columns_item
+									});
+								/*
+								for (prop in converting_property_list) {
+									column_property = grid_columns_item[converting_property_list[prop]];
+									if (column_property === undefined) {
+										continue;
+									} else {
+										form_item_obj[prop] = column_property;
+									}
+								}
+								*/
+								form_items_ary.push(form_item_obj);
+								form_item_obj = {};
+							}
+							oResult = form_items_ary;
+						} else if (Ext.isArray(aColumns) !== false) {
+							oResult = aColumns;
+						} else {
+							/*WARNING IT'S NOT USUAL TO SEE THIS MESSAGE.*/
+						}
+						consolelog({
+								'gridColumnsToFormItems__form_items_ary': oResult
+							});
+						consoledebug('END gridColumnsToFormItems');
+						return oResult;
+					};
+					var initDefaultForm = function(oOpts) {
+						consoledebug('BEGIN initDefaultForm');
+						var oResult;
+						oOpts = oOpts || {};
+						var sFormType = oOpts.form_type || 'Add',
+							sFormTitle = oOpts.form_title || me.locale['default'].form.title,
+							sSubmitBtnName = oOpts.submit_btn_name || 'search',
+							sResetBtnName = oOpts.reset_btn_name || me.locale['default'].reset_btn.text,
+							sCancelBtnName = oOpts.cancel_btn_name || me.locale['default'].cancel_btn.text;
+						var grid_columns = me.columns,
+							default_form = me['default' + sFormType + 'Form'],
+							default_form_is_object = Ext.isObject(default_form),
+							form_items = (default_form_is_object === true ? default_form.items : me.utils('convertGridColumnsToFormItems')(grid_columns)),
+							form_buttons = (default_form_is_object === true ? default_form.buttons : [{
+										iconCls: 'fcat do-icon',
+										text: sSubmitBtnName
+									}, {
+										iconCls: 'fcat reset-icon',
+										text: sResetBtnName
+									}, {
+										iconCls: 'fcat cancel-icon',
+										text: sCancelBtnName,
+										listeners: {
+											click: function(oThis, ev, eOpts) {
+												var btn_obj = oThis,
+													toolbar_obj = btn_obj.ownerCt,
+													form_obj = toolbar_obj.ownerCt,
+													form_container_obj = form_obj.ownerCt;
+												me.utils('toggleDefaultForm')(oThis, ev, eOpts, form_container_obj);
+											}
+										}
+									}
+								]),
+							form_style = me.get_default_form_style(),
+							form_container = {};
+						var initDockFormContainer = function() {
+							var form = Ext.create('Ews.view.form.GridDockPanel', Ext.merge({}, {
+										items: form_items,
+										buttons: form_buttons
+									}, default_form));
+
+							oResult = Ext.create('Ews.view.form.FieldSet', {
+									title: sFormTitle,
+									//collapsible: true,
+									hidden: true,
+									dock: 'bottom',
+									//border: '0 0 0 0',
+									padding: '0 0 0 0',
+									margin: '0 0 0 0',
+									items: [form]
+									//layout: 'column',
+									//items: form_items.concat([{
+									//			xtype: 'toolbar',
+									//			border: '0 0 1 0',
+									//			padding: '5 20 7 20',
+									//			margin: '0 0 0 0',
+									//			width: '100%',
+									//			defaults: {
+									//				minWidth: 80
+									//			},
+									//			items:form_buttons 
+									//		}
+									//	])
+								});
+							consoledebug('BEGIN initDefaultForm');
+							return oResult;
+						}, initDialogFormContainer = function() {
+								var form = Ext.create('Ews.view.form.Panel', Ext.merge({}, {
+											collapsible: false,
+											items: form_items,
+											buttons: form_buttons
+										}, default_form));
+								return Ext.create('Ews.view.dialog.Panel', {
+										title: sFormTitle,
+										hidden: true,
+										items: [form]
+									});
+							};
+						switch (form_style) {
+							case 'dock':
+								form_container = initDockFormContainer();
+								break;
+							case 'dialog':
+								form_container = initDialogFormContainer();
+								break;
+							default:
+								form_container = form;
+								break;
+						}
+						consoledebug('END initDefaultForm');
+						return form_container;
+					};
+					var toggleDefaultForm = function(oThis, ev, eOpts, oForm) {
+						consoledebug('BEGIN toggleDefaultForm');
+						var oResult, default_forms_ary = me.default_forms,
+							default_forms_length = default_forms_ary.length,
+							default_forms_obj, isVisibleBool = oForm.isVisible();
+						while (default_forms_length-- > 0) {
+							default_forms_obj = default_forms_ary[default_forms_length];
+							if (default_forms_obj !== oForm) {
+								default_forms_obj.hide({
+										duration: 2000,
+										to: {
+											opacity: 0
+										}
+									});
+							}
+						}
+						oResult = isVisibleBool === false ? oForm.show({
+								duration: 2000,
+								to: {
+									opacity: 90
+								}
+							}) : oForm.hide({
+								duration: 2000,
+								to: {
+									opacity: 0
+								}
+							});
+						consoledebug('END toggleDefaultForm');
+						return oResult;
+					};
+					var initPublicProperty = function(oPrivatePublicNames) {
+						consoledebug('BEGIN initPublicProperty');
+						var prop, sPrivateName, sPublicName;
+						for (sPrivateName in oPrivatePublicNames) {
+							sPublicName = oPrivatePublicNames[sPrivateName];
+							if (Ext.isString(sPublicName) === true) {
+								if (sPublicName === "") {
+									sPublicName = fGetPublicName(sPrivateName);
+								} else {
+									/*do nothing*/
+								}
+								me[sPublicName] = me[sPublicName] || me[sPrivateName];
+							} else {
+								/*WARNING IT'S NOT USUAL TO SEE THIS MESSAGE.*/
+							}
+						}
+						consoledebug('END initPublicProperty');
+					};
+					var mergeProperty = function(sPropertyName) {
+						consoledebug('BEGIN mergeProperty');
+						consolelog({
+								mergeProperty: sPropertyName
+							});
+						var oResult, defaultPropertyName = fGetDefaultName(sPropertyName),
+							staticPropertyName = fGetStaticName(sPropertyName);
+						oResult = Ext.merge({}, me[defaultPropertyName], me[sPropertyName], me[staticPropertyName]);
+						consoledebug('END mergeProperty');
+						return oResult;
+					};
+					var syncAllProperty = function(oPrivatePublicNames) {
+						consoledebug('BEGIN syncAllProperty');
+						var prop, sPrivateName, sPublicName, sGetFuncName, fGetFunc = function(sPrivateName, scope) {
+								return scope.apply(function() {
+										consolelog(this);
+										var me = this;
+										return me.utils('mergeProperty')(fGetPublicName(sPrivateName));
+									});
+							};
+						for (sPrivateName in oPrivatePublicNames) {
+							sGetFuncName = 'set_' + sPrivateName;
+							sPublicName = oPrivatePublicNames[sPrivateName];
+							me[sGetFuncName] = me[sGetFuncName] || fGetFunc(sPrivateName, scope);
+						}
+
+
+						/*TODO sync all default/normal/static property.*/
+						for (sPrivateName in oPrivatePublicNames) {
+							sPublicName = oPrivatePublicNames[sPrivateName] || fGetPublicName(sPrivateName);
+							dealDefaultAndStaticProperty(sPublicName, me);
+						}
+						consoledebug('END syncAllProperty');
+					};
+					var syncProperty = function(sPrivateName) {
+						var sPublicName = fGetPublicName(sPrivateName);
+					};
+					var dealDefaultAndStaticProperty = function(sPublicName, me) {
+						consoledebug('BEGIN dealDefaultAndStaticProperty');
+						consolelog({
+								dealDefaultAndStaticProperty: sPublicName
+							});
+						var defaultName = fGetDefaultName(sPublicName),
+							staticName = fGetStaticName(sPublicName),
+							defaultProperty, staticProperty;
+						if (Ext.isDefined(me[defaultName]) === true) {
+							defaultProperty = me.utils('syncProperty')(defaultName);
+						}
+						if (Ext.isDefined(me[staticName]) === true) {
+							staticProperty = me.utils('syncProperty')(staticName);
+						}
+						Ext.merge({}, defaultProperty, me[sPublicName], staticProperty);
+						consoledebug('END dealDefaultAndStaticProperty');
+					};
+
+					var mergeDefaultAndStaticProperty = function(sPropertyName) {
+						/*get default property value .*/
+						consoledebug('BEGIN mergeDefaultAndStaticProperty');
+						var defaultPropertyValue, staticPropertyValue;
+						consolelog({
+								mergeDefaultAndStaticProperty: sPropertyName
+							});
+						defaultPropertyValue = me.utils('getProperty')(fGetDefaultName(sPropertyName));
+						staticPropertyValue = me.utils('getProperty')(fGetStaticName(sPropertyName));
+						consoledebug('END mergeDefaultAndStaticProperty');
+						return Ext.merge({}, defaultPropertyValue, me[sPropertyName], staticPropertyValue);
+					};
+
+
+
+					var ifUpperPropertyExist = function(sPropertyName) {
+						consoledebug('BEGIN ifUpperPropertyExist');
+						var oResult, sUpperLevelName;
+						sUpperLevelName = fGetPublicName(sPropertyName);
+						if (sUpperLevelName === sPropertyName) {
+							/*IF UPPER LEVEL PROPERTY IS NOT EXIST*/
+							oResult = false;
+						} else {
+							/*IF UPPER LEVEL PROPERTY IS NOT EXIST*/
+							oResult = true;
+						}
+						consoledebug('END ifUpperPropertyExist');
+						return oResult;
+					};
+					var ifLowerPropertyExist = function(sPropertyName) {
+						consoledebug('BEGIN ifLowerPropertyExist');
+						var oResult, sLowerLevelName;
+						consolelog({
+								ifLowerPropertyExist: sPropertyName
+							});
+						sLowerLevelName = fGetPrivateName(sPropertyName);
+						if (sLowerLevelName === sPropertyName) {
+							/*IF LOWER LEVEL PROPERTY IS NOT EXIST*/
+							oResult = false;
+						} else {
+							/*IF LOWER LEVEL PROPERTY IS EXIST*/
+							oResult = true;
+						}
+						consoledebug('END ifLowerPropertyExist');
+						return oResult;
+					};
+					var ifThisPropertyExist = function(sPropertyName) {
+						consoledebug('BEGIN ifThisPropertyExist');
+						var oResult = false;
+						if (Ext.isDefined(me[sPropertyName]) === true || ifDefaultPropertyExist(sPropertyName) === true || ifStaticPropertyExist(sPropertyName) === true) {
+							oResult = true;
+						} else {
+							oResult = false;
+						}
+						consoledebug('END ifThisPropertyExist');
+						return oResult;
+					};
+					var ifDefaultPropertyExist = function(sPropertyName) {
+						consoledebug('BEGIN ifDefaultPropertyExist');
+						consolelog({
+								ifDefaultPropertyExist: sPropertyName
+							});
+						consoledebug('END ifDefaultPropertyExist');
+						return Ext.isDefined(me[fGetDefaultName(sPropertyName)]);
+					};
+					var ifStaticPropertyExist = function(sPropertyName) {
+						consoledebug('BEGIN ifStaticPropertyExist');
+						consoledebug('END ifStaticPropertyExist');
+						return Ext.isDefined(me[fGetStaticName(sPropertyName)]);
+					};
+					var getProperty = function(sPropertyName) {
+						consoledebug('BEGIN getProperty');
+						var sUpperLevelName = me.static_private_public_name_config[sPropertyName],
+							sLowerLevelName, oUpperLevelPropertyValue, defaultPropertyValue, staticPropertyValue, oResult;
+						if (me.utils('ifUpperPropertyExist')(sPropertyName) === true) {
+							/*IF UPPER LEVEL PROPERTY IS EXIST*/
+							oResult = me.utils('getUpperLevelProperty')(sPropertyName);
+						} else {
+							/*UPPER LEVEL PROPERTY IS NOT EXIST*/
+							/*TODO get Default Property and check if it is undefined*/
+							defaultPropertyValue = me.utils('getDefaultProperty')(sPropertyName);
+							/*TODO get static property and check if it is undefined*/
+							staticPropertyValue = me.utils('getStaticProperty')(sPropertyName);
+							/*TODO if the default property and static property and the original property are all not exist. Go check the lower level property.*/
+							if (me.utils('ifThisPropertyExist')(sPropertyName) === false) {
+								/*THIS PROPERTY IS NOT EXIST*/
+								/*CHECK IF THE LOWER LEVEL PROPERTY IS EXIST*/
+								consolelog({
+										getProperty: sPropertyName
+									});
+								sLowerLevelName = fGetPrivateName(sPropertyName);
+								if (me.utils('ifLowerPropertyExist')(sPropertyName) === true) {
+									oResult = me.utils('getLowerLevelProperty')(sLowerLevelName);
+								} else {
+									/*ALREADY THE LOWEREST VALUE*/
+									oResult = undefined;
+								}
+							} else {
+								/*CHECK IF THE DEFAULT OR STATIC PROPERTY IS EXIST*/
+								oResult = me.utils('getThisProperty')(sPropertyName);
+							}
+						}
+						consoledebug('END getProperty');
+						return oResult;
+					};
+					var getDefaultProperty = function(sPropertyName) {
+						consoledebug('BEGIN getDefaultProperty');
+						consolelog({
+								getDefaultProperty: sPropertyName
+							});
+						var propertyName = fGetDefaultName(sPropertyName),
+							defaultValue, staticValue, oResult;
+						/* check upper level*/
+						if (me.utils('ifUpperPropertyExist')(propertyName) === true) {
+							/*UPER LEVEL PROPERTY IS EXIST*/
+							oResult = me.utils('getUpperLevelProperty')(propertyName);
+						}
+						/* check if property is exist*/
+						if (me.utils('ifThisPropertyExist')(propertyName) === true) {
+							/* check default value*/
+							defaultValue = me.utils('getDefaultProperty')[fGetDefaultName(propertyName)];
+							/* check static value*/
+							staticValue = me.utils('getStaticProperty')[fGetStaticName(propertyName)];
+							oResult = Ext.merge({}, defaultValue, me[propertyName], staticValue);
+						} else if (me.utils('ifLowerPropertyExist')(propertyName) === true) {
+							/* check lower level*/
+							oResult = me.utils('getLowerLevelProperty')(propertyName);
+						} else {
+							oResult = undefined;
+						}
+						consoledebug('END getDefaultProperty');
+						return oResult;
+					};
+					var getStaticProperty = function(sPrivateName) {
+						consoledebug('BEGIN getStaticProperty');
+						var propertyName = fGetStaticName(sPrivateName),
+							defaultValue, staticValue, oResult;
+						/*TODO check upper level*/
+						if (me.utils('ifUpperPropertyExist')(propertyName) === true) {
+							oResult = me.utils('getUpperLevelProperty')(propertyName);
+						} else {
+							/*TODO check if property is exist*/
+							if (me.utils('ifThisPropertyExist')(propertyName) === true) {
+								/*TODO check default value*/
+
+								consolelog({
+										getStaticProperty: propertyName
+									});
+								defaultValue = me.utils('getDefaultProperty')[fGetDefaultName(propertyName)];
+								/*TODO check static value*/
+								staticValue = me.utils('getStaticProperty')[fGetStaticName(propertyName)];
+								oResult = Ext.merge({}, defaultValue, me[propertyName], staticValue);
+							} else if (me.utils('ifLowerPropertyExist')(propertyName) === true) {
+								/*TODO check lower level*/
+								oResult = me.utils('getLowerLevelProperty')(propertyName);
+							} else {
+								oResult = undefined;
+							}
+						}
+						consoledebug('END getStaticProperty');
+						return oResult;
+					};
+					var getThisProperty = function(sPropertyName) {
+						/* check default value*/
+						consoledebug('BEGIN getThisProperty');
+						consolelog({
+								getThisProperty: sPropertyName
+							});
+						defaultValue = me.utils('getDefaultProperty')[fGetDefaultName(sPropertyName)];
+						/* check static value*/
+						staticValue = me.utils('getStaticProperty')[fGetStaticName(sPropertyName)];
+						consoledebug('END getThisProperty');
+						return Ext.merge({}, defaultValue, me[sPropertyName], staticValue);
+					};
+
+					var analysePropertyConfigureObject = function(aConfigure, targetOwner, sourceOwner) {
+						/*analyse propertyConfigureObject and convert one's property to another's.*/
+						consoledebug('BEGIN analysePropertyConfigureObject');
+						var prop, oConfigureItem, targetAry, sourceAry, nConfigureLength = aConfigure.length;
+						targetOwner = targetOwner || {}, sourceOwner = sourceOwner || {};
+						while (nConfigureLength-- > 0) {
+							oConfigureItem = aConfigure[nConfigureLength];
+							//consolelog({oConfigureItem:oConfigureItem,targetOwner:targetOwner, sourceOwner:sourceOwner})
+							targetAry = me.utils('analyseIt')(oConfigureItem[0], targetOwner);
+							sourceAry = me.utils('analyseIt')(oConfigureItem[1], sourceOwner);
+							/*utils('analyseIt') return [propertyNameStr, ownerObject]*/
+							consolelog({
+									targetAry: targetAry,
+									sourceAry: sourceAry
+								});
+							targetAry[1][targetAry[0]] = sourceAry[1][sourceAry[0]];
+						}
+						consoledebug('END analysePropertyConfigureObject');
+						return targetOwner;
+					};
+					var analyseIt = function(targetObj, ownerObj) {
+						/*targetObj is the configure object to be anlaysed.*/
+						consoledebug('BEGIN analyseIt');
+						var oResult, defaultValue;
+						if (Ext.isObject(ownerObj) === false) {
+							//consolelog({ownerObj:Ext.isObject(ownerObj)});
+							oResult = [targetObj, ownerObj];
+						} else {
+							//consolelog({ownerObj:ownerObj});
+							if (Ext.isString(targetObj) === true) {
+								/*match*/
+								/*there is only one way out.*/
+								defaultValue = '';
+								oResult = me.utils('analyseString')(targetObj, ownerObj, defaultValue);
+							} else if (Ext.isObject(targetObj) === true) {
+								/*analyse it */
+								defaultValue = {};
+								oResult = me.utils('analyseObject')(targetObj, ownerObj, defaultValue);
+							} else if (Ext.isArray(targetObj) === true) {
+								/* add all items of Array to gether.*/
+								defaultValue = 'USE DEFAULT FUNCTION PLS.';
+								oResult = me.utils('analyseArray')(targetObj, ownerObj, defaultValue);
+							} else {
+								/*WARNING, Out of the edge of the design.*/
+								oResult = "WARNING, Out of the edge of the design.";
+							}
+						}
+						consoledebug('END analyseIt');
+						return oResult;
+					}, analyseString = function(targetStr, ownerObj, defaultValue) {
+							consoledebug('BEGIN analyseString');
+							if (Ext.isDefined(ownerObj[targetStr]) === false) {
+								ownerObj[targetStr] = defaultValue;
+							} else {
+								/*DO NOTHING*/
+							}
+							consoledebug('END analyseString');
+							return [targetStr, ownerObj];
+						}, analyseObject = function(targetObj, ownerObj, defaultValue) {
+							consoledebug('BEGIN analyseObject');
+							var prop, oResult;
+							defaultValue = defaultValue || {};
+							//consolelog({targetObj:targetObj});
+							for (prop in targetObj) {
+								//consolelog({prop:prop});
+								if (Ext.isDefined(ownerObj[prop]) === false) {
+									ownerObj[prop] = defaultValue;
+								} else {
+									/*DO NOTHING*/
+								}
+								//consolelog({targetObj_prop:targetObj[prop], ownerObj_prop:ownerObj[prop]});
+								oResult = me.utils('analyseIt')(targetObj[prop], ownerObj[prop]);
+								break;
+								/*ONLY LOOP ONCE, OR YOU SHOULD put them into an Array.*/
+							}
+							consoledebug('END analyseObject');
+							return oResult;
+						}, analyseArray = function(targetAry, ownerObj, defaultValue) {
+							consoledebug('BEGIN analyseArray');
+							var oResult, aryLength = targetObj.length || 0,
+								aryItem;
+							defaultValue = (Ext.isFunction(defaultValue) === true) ? defaultValue : function(targetObj, ownerObj) {
+								var aryItem, aryLength = targetObj.length,
+									resultAry = [];
+								targetObj.reverse();
+								while (aryLength-- > 0) {
+									aryItem = targetObj[aryLength];
+									resultArys.push(me.utils('analyseIt')(aryItem, ownerObj));
+								}
+								return resultAry.join(' ');
+							}; /*defaultValue are surpposed to be a function.*/
+							if (aryLength-- > 0) {
+								aryItem = targetObj[aryLength];
+								if (Ext.isFunction(aryItem) === false) {
+									aryLength++;
+									if (Ext.isFunction(defaultValue) === true) {
+										oResult = defaultValue(targetObj, ownerObj);
+									} else {
+										/*WARNING, Out of the edge of the design.*/
+										oResult = undefined;
+									}
+								} else if (Ext.isFunction(aryItem) === true) {
+									oResult = aryItem(targetObj.slice(1), ownerObj);
+								} else {
+									/*WARNING, Out of the edge of the design.*/
+									oResult = undefined;
+								}
+							} else {
+								/*WARNING, IT'S NOT USUAL TO SEE THIS MESSAGE.*/
+								oResult = undefined;
+							}
+							consoledebug('END analyseArray');
+							return oResult;
+						};
+					var obj = {
+						withNo: withNo,
+						withOut: withNo,
+						convertGridColumnsToFormItems: gridColumnsToFormItems,
+						initDefaultForm: initDefaultForm,
+						toggleDefaultForm: toggleDefaultForm,
+						initPublicProperty: initPublicProperty,
+						mergeProperty: mergeProperty,
+						ifUpperPropertyExist: ifUpperPropertyExist,
+						ifLowerPropertyExist: ifLowerPropertyExist,
+						ifThisPropertyExist: ifThisPropertyExist,
+						ifDefaultPropertyExist: ifDefaultPropertyExist,
+						ifStaticPropertyExist: ifStaticPropertyExist,
+						getProperty: getProperty,
+						getUpperLevelProperty: getProperty,
+						getLowerLevelProperty: getProperty,
+						getThisProperty: getThisProperty,
+						mergeDefaultAndStaticProperty: mergeDefaultAndStaticProperty,
+						analysePropertyConfigureObject: analysePropertyConfigureObject,
+						analyseIt: analyseIt,
+						analyseString: analyseString,
+						analyseObject: analyseObject,
+						analyseArray: analyseArray
+					};
+					if (Ext.isString(funcNameStr) === true && funcNameStr !== '') {
+						if (obj[funcNameStr] === undefined) {
+							return function() {};
+						} else {
+							return obj[funcNameStr];
+						}
+					}
+					return obj;
+				}
+			};
+		})());
